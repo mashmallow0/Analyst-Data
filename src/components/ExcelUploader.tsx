@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { DataRow, ColumnConfig, DataFile, Settings, ChartSettings } from '../types';
-import { Upload, FileSpreadsheet, Check, AlertCircle, FilePlus, X } from 'lucide-react';
+import { FileSpreadsheet, Check, FilePlus, X } from 'lucide-react';
 
 interface ExcelUploaderProps {
   onFilesLoaded: (files: DataFile[]) => void;
@@ -102,10 +102,11 @@ export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded, exi
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
 
-    setUploadingFiles(files.map(f => ({ name: f.name, status: 'uploading' })));
+    setUploadingFiles(files.map(f => ({ name: f.name, status: 'uploading' as const })));
 
     const newFiles: DataFile[] = [];
-    const updatedUploading = [...files.map(f => ({ name: f.name, status: 'uploading' as const }))];
+    const updatedUploading: { name: string; status: 'uploading' | 'done' | 'error'; error?: string }[] = 
+      [...files.map(f => ({ name: f.name, status: 'uploading' as const }))];
 
     for (let i = 0; i < files.length; i++) {
       try {
@@ -141,10 +142,11 @@ export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded, exi
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    setUploadingFiles(files.map(f => ({ name: f.name, status: 'uploading' })));
+    setUploadingFiles(files.map(f => ({ name: f.name, status: 'uploading' as const })));
 
     const newFiles: DataFile[] = [];
-    const updatedUploading = [...files.map(f => ({ name: f.name, status: 'uploading' as const }))];
+    const updatedUploading: { name: string; status: 'uploading' | 'done' | 'error'; error?: string }[] = 
+      [...files.map(f => ({ name: f.name, status: 'uploading' as const }))];
 
     for (let i = 0; i < files.length; i++) {
       try {

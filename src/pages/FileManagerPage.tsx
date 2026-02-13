@@ -15,7 +15,6 @@ export const FileManagerPage: React.FC<FileManagerPageProps> = ({
   activeFileId,
   onFileSelect,
   onFileDelete,
-  onFilesAdd,
 }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -84,7 +83,7 @@ export const FileManagerPage: React.FC<FileManagerPageProps> = ({
                         Active
                       </span>
                     )}
-                  </div㸝
+                  </div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                     <span className="flex items-center gap-1">
                       <Database className="w-4 h-4" />

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -26,6 +26,9 @@ import {
   FileSpreadsheet,
   Trash2,
   ChevronDown,
+  Bookmark,
+  BookmarkCheck,
+  X,
 } from 'lucide-react';
 import { DataFile, AggregatedData } from '../types';
 import { ExcelUploader } from '../components/ExcelUploader';
@@ -48,7 +51,54 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [showAggregated, setShowAggregated] = useState(true);
+  
+  // Saved filters state
+  const [savedFilters, setSavedFilters] = useState<Array<{ name: string; filters: Record<string, string>; searchTerm: string; id: string }>>(() => {
+    const stored = localStorage.getItem('analyst-data-saved-filters');
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
+  const [newFilterName, setNewFilterName] = useState('');
+  const [showLoadFilterDropdown, setShowLoadFilterDropdown] = useState(false);
 
+  // Persist saved filters to localStorage
+  useEffect(() => {
+    localStorage.setItem('analyst-data-saved-filters', JSON.stringify(savedFilters));
+  }, [savedFilters]);
+
+  // Save current filter
+  const handleSaveFilter = () => {
+    if (!newFilterName.trim()) return;
+    const newFilter = {
+      id: Date.now().toString(),
+      name: newFilterName.trim(),
+      filters: { ...activeFilters },
+      searchTerm,
+    };
+    setSavedFilters([...savedFilters, newFilter]);
+    setNewFilterName('');
+    setShowSaveFilterModal(false);
+  };
+
+  // Load saved filter
+  const handleLoadFilter = (filter: typeof savedFilters[0]) => {
+    setActiveFilters(filter.filters);
+    setSearchTerm(filter.searchTerm);
+    setShowLoadFilterDropdown(false);
+  };
+
+  // Delete saved filter
+  const handleDeleteFilter = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavedFilters(savedFilters.filter(f => f.id !== id));
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setActiveFilters({});
+    setSearchTerm('');
+  };
+  
   const data = activeFile?.data || [];
   const columns = activeFile?.columns || [];
   const settings = activeFile?.settings || { filterColumns: [], groupByColumn: '', sumColumns: [], displayColumns: [] };
@@ -101,7 +151,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       return Object.entries(aggregatedData).map(([key, values]) => ({
         name: key,
         value: values[chartSettings.yAxisColumn] || 0,
-        count: values.count,
         ...values,
       }));
     }
@@ -296,6 +345,70 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   ))}
                 </select>
               ))}
+            
+              {/* Save/Load Filter Buttons */}
+              <div className="flex gap-2 lg:ml-auto">
+                <button
+                  onClick={() => setShowSaveFilterModal(true)}
+                  className="btn-secondary text-sm flex items-center gap-1"
+                  title="Save current filter"
+                >
+                  <Bookmark className="w-4 h-4" />
+                  Save
+                </button>
+                
+                {savedFilters.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowLoadFilterDropdown(!showLoadFilterDropdown)}
+                      className="btn-secondary text-sm flex items-center gap-1"
+                    >
+                      <BookmarkCheck className="w-4 h-4" />
+                      Load
+                      <ChevronDown className={`w-3 h-3 transition-transform ${showLoadFilterDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showLoadFilterDropdown && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                        <div className="p-2 border-b border-gray-100">
+                          <span className="text-xs font-medium text-gray-500">Saved Filters ({savedFilters.length})</span>
+                        </div>
+                        {savedFilters.map((filter) => (
+                          <div
+                            key={filter.id}
+                            onClick={() => handleLoadFilter(filter)}
+                            className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{filter.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {Object.keys(filter.filters).filter(k => filter.filters[k]).length} filters
+                                {filter.searchTerm && ` • "${filter.searchTerm}"`}
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteFilter(filter.id, e)}
+                              className="p-1 text-gray-400 hover:text-red-500 ml-2"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {(Object.keys(activeFilters).some(k => activeFilters[k]) || searchTerm) && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="btn-secondary text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             {settings.groupByColumn && (
               <label className="flex items-center gap-2 mt-4 cursor-pointer">
@@ -325,7 +438,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  {chartSettings.type === 'bar' && (
+                  {chartSettings.type === 'bar' ? (
                     <BarChart data={chartData.slice(0, 20)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -333,8 +446,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <Tooltip />
                       <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  )}
-                  {chartSettings.type === 'line' && (
+                  ) : chartSettings.type === 'line' ? (
                     <LineChart data={chartData.slice(0, 20)}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -342,8 +454,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       <Tooltip />
                       <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
                     </LineChart>
-                  )}
-                  {chartSettings.type === 'pie' && (
+                  ) : (
                     <PieChart>
                       <Pie
                         data={chartData.slice(0, 8)}
@@ -354,7 +465,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         outerRadius={100}
                         label
                       >
-                        {chartData.slice(0, 8).map((entry, index) => (
+                        {chartData.slice(0, 8).map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -429,6 +540,63 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <h3 className="text-lg font-medium text-gray-900">No active file selected</h3>
           <p className="text-gray-500 mt-2">Go to Files page to select a file, or upload a new one above</p>
+        </div>
+      )}
+
+      {/* Save Filter Modal */}
+      {showSaveFilterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Save Filter</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Save current filter settings for future use.
+            </p>
+            <input
+              type="text"
+              placeholder='Filter name (e.g. "Q1 Sales Report")'
+              value={newFilterName}
+              onChange={(e) => setNewFilterName(e.target.value)}
+              className="input w-full mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveFilter();
+                if (e.key === 'Escape') setShowSaveFilterModal(false);
+              }}
+            />
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+              <p className="font-medium text-gray-700 mb-1">Current filter:</p>
+              <ul className="text-gray-600 space-y-1">
+                {searchTerm && <li>Search: "{searchTerm}"</li>}
+                {Object.entries(activeFilters)
+                  .filter(([_, val]) => val)
+                  .map(([col, val]) => (
+                    <li key={col}>{col}: {val}</li>
+                  ))}
+                {!searchTerm && Object.keys(activeFilters).filter(k => activeFilters[k]).length === 0 && (
+                  <li className="text-gray-400">No active filters</li>
+                )}
+              </ul>
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowSaveFilterModal(false);
+                  setNewFilterName('');
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveFilter}
+                disabled={!newFilterName.trim()}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Filter
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
