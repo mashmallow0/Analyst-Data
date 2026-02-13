@@ -1,52 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ChartSettingsPage } from './pages/ChartSettingsPage';
-import { DataRow, ColumnConfig, Settings, ChartSettings } from './types';
+import { FileManagerPage } from './pages/FileManagerPage';
+import { DataFile } from './types';
 
 function App() {
-  const [data, setData] = useState<DataRow[]>([]);
-  const [columns, setColumns] = useState<ColumnConfig[]>([]);
-  
-  const [settings, setSettings] = useState<Settings>({
-    filterColumns: [],
-    groupByColumn: '',
-    sumColumns: [],
-    displayColumns: [],
-  });
+  const [files, setFiles] = useState<DataFile[]>([]);
+  const [activeFileId, setActiveFileId] = useState<string | null>(null);
 
-  const [chartSettings, setChartSettings] = useState<ChartSettings>({
-    type: 'bar',
-    xAxisColumn: '',
-    yAxisColumn: '',
-    title: 'Data Analysis',
-  });
+  const activeFile = files.find(f => f.id === activeFileId) || null;
 
-  const handleDataLoaded = (newData: DataRow[], newColumns: ColumnConfig[]) => {
-    setData(newData);
-    setColumns(newColumns);
-    
-    // Auto-configure settings based on data
-    const textColumns = newColumns.filter(c => c.type === 'text').map(c => c.name);
-    const numberColumns = newColumns.filter(c => c.type === 'number').map(c => c.name);
-    const allColumnNames = newColumns.map(c => c.name);
+  const handleFilesAdd = useCallback((newFiles: DataFile[]) => {
+    setFiles(prev => [...prev, ...newFiles]);
+    // Set the first new file as active if no active file
+    if (!activeFileId && newFiles.length > 0) {
+      setActiveFileId(newFiles[0].id);
+    }
+  }, [activeFileId]);
 
-    setSettings({
-      filterColumns: textColumns.slice(0, 2),
-      groupByColumn: textColumns[0] || '',
-      sumColumns: numberColumns.slice(0, 1),
-      displayColumns: allColumnNames,
-    });
+  const handleFileSelect = useCallback((fileId: string) => {
+    setActiveFileId(fileId);
+  }, []);
 
-    setChartSettings({
-      type: 'bar',
-      xAxisColumn: textColumns[0] || '',
-      yAxisColumn: numberColumns[0] || '',
-      title: `${numberColumns[0] || 'Value'} by ${textColumns[0] || 'Category'}`,
-    });
-  };
+  const handleFileDelete = useCallback((fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+    if (activeFileId === fileId) {
+      const remaining = files.filter(f => f.id !== fileId);
+      setActiveFileId(remaining.length > 0 ? remaining[0].id : null);
+    }
+  }, [activeFileId, files]);
+
+  const handleUpdateFileSettings = useCallback((fileId: string, settings: any) => {
+    setFiles(prev => prev.map(f => 
+      f.id === fileId ? { ...f, settings } : f
+    ));
+  }, []);
+
+  const handleUpdateFileChartSettings = useCallback((fileId: string, chartSettings: any) => {
+    setFiles(prev => prev.map(f => 
+      f.id === fileId ? { ...f, chartSettings } : f
+    ));
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    if (confirm('Clear all files? This cannot be undone.')) {
+      setFiles([]);
+      setActiveFileId(null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,11 +61,22 @@ function App() {
             path="/"
             element={
               <DashboardPage
-                data={data}
-                columns={columns}
-                settings={settings}
-                chartSettings={chartSettings}
-                onDataLoaded={handleDataLoaded}
+                files={files}
+                activeFile={activeFile}
+                onFilesAdd={handleFilesAdd}
+                onClearAll={handleClearAll}
+              />
+            }
+          />
+          <Route
+            path="/files"
+            element={
+              <FileManagerPage
+                files={files}
+                activeFileId={activeFileId}
+                onFileSelect={handleFileSelect}
+                onFileDelete={handleFileDelete}
+                onFilesAdd={handleFilesAdd}
               />
             }
           />
@@ -69,9 +84,10 @@ function App() {
             path="/settings"
             element={
               <SettingsPage
-                columns={columns}
-                settings={settings}
-                onSettingsChange={setSettings}
+                activeFile={activeFile}
+                onSettingsChange={(settings) => 
+                  activeFile && handleUpdateFileSettings(activeFile.id, settings)
+                }
               />
             }
           />
@@ -79,9 +95,10 @@ function App() {
             path="/chart-settings"
             element={
               <ChartSettingsPage
-                columns={columns}
-                chartSettings={chartSettings}
-                onChartSettingsChange={setChartSettings}
+                activeFile={activeFile}
+                onChartSettingsChange={(chartSettings) => 
+                  activeFile && handleUpdateFileChartSettings(activeFile.id, chartSettings)
+                }
               />
             }
           />

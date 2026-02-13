@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Settings, Home, PieChart } from 'lucide-react';
+import { BarChart3, Settings, Home, PieChart, FolderOpen } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -13,8 +13,9 @@ export const Header: React.FC = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
+    { path: '/files', label: 'Files', icon: FolderOpen },
     { path: '/settings', label: 'Settings', icon: Settings },
-    { path: '/chart-settings', label: 'Chart Settings', icon: PieChart },
+    { path: '/chart-settings', label: 'Charts', icon: PieChart },
   ];
 
   return (

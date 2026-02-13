@@ -27,3 +27,18 @@ export interface AggregatedData {
     count: number;
   };
 }
+
+export interface DataFile {
+  id: string;
+  name: string;
+  data: DataRow[];
+  columns: ColumnConfig[];
+  uploadedAt: Date;
+  settings: Settings;
+  chartSettings: ChartSettings;
+}
+
+export interface AppState {
+  files: DataFile[];
+  activeFileId: string | null;
+}
