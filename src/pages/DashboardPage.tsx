@@ -215,7 +215,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             aggregations, and beautiful charts.
           </p>
         </div>
-        <ExcelUploader onFilesLoaded={onFilesAdd} existingFiles={files} />
+        <ExcelUploader onFilesLoaded={onFilesAdd} />
       </div>
     );
   }
@@ -262,7 +262,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <h2 className="text-lg font-semibold text-gray-900">Add More Files</h2>
           <span className="text-sm text-gray-500">{files.length} file{files.length !== 1 ? 's' : ''} loaded</span>
         </div>
-        <ExcelUploader onFilesLoaded={onFilesAdd} existingFiles={files} />
+        <ExcelUploader onFilesLoaded={onFilesAdd} />
       </div>
 
       {activeFile ? (

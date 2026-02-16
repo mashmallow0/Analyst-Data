@@ -5,10 +5,9 @@ import { FileSpreadsheet, Check, FilePlus, X } from 'lucide-react';
 
 interface ExcelUploaderProps {
   onFilesLoaded: (files: DataFile[]) => void;
-  existingFiles: DataFile[];
 }
 
-export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded, existingFiles }) => {
+export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{ name: string; status: 'uploading' | 'done' | 'error'; error?: string }[]>([]);
 
@@ -121,12 +120,12 @@ export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded, exi
     }
 
     if (newFiles.length > 0) {
-      onFilesLoaded([...existingFiles, ...newFiles]);
+      onFilesLoaded(newFiles);
     }
 
     // Clear uploading status after 3 seconds
     setTimeout(() => setUploadingFiles([]), 3000);
-  }, [existingFiles, onFilesLoaded, processFile]);
+  }, [onFilesLoaded, processFile]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -161,11 +160,11 @@ export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFilesLoaded, exi
     }
 
     if (newFiles.length > 0) {
-      onFilesLoaded([...existingFiles, ...newFiles]);
+      onFilesLoaded(newFiles);
     }
 
     setTimeout(() => setUploadingFiles([]), 3000);
-  }, [existingFiles, onFilesLoaded, processFile]);
+  }, [onFilesLoaded, processFile]);
 
   return (
     <div className="w-full">

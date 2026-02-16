@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Settings, Home, PieChart, FolderOpen } from 'lucide-react';
+import { BarChart3, Settings, Home, PieChart, FolderOpen, LogOut } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -8,7 +8,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onLogout?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const location = useLocation();
 
   const navItems = [
@@ -50,6 +54,17 @@ export const Header: React.FC = () => {
                 </Link>
               );
             })}
+            
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 ml-2"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            )}
           </nav>
         </div>
       </div>
